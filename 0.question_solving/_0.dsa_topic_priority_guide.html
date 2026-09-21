@@ -1,0 +1,147 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--font-sans); }
+.container { padding: 1rem 0; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem; }
+.filter-btn { padding: 6px 14px; font-size: 13px; border-radius: 20px; border: 0.5px solid var(--color-border-secondary); background: transparent; color: var(--color-text-secondary); cursor: pointer; transition: all 0.15s; }
+.filter-btn.active { background: var(--color-background-info); color: var(--color-text-info); border-color: var(--color-border-info); font-weight: 500; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 1.25rem; font-size: 12px; color: var(--color-text-secondary); }
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; padding: 8px 10px; font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 0.5px solid var(--color-border-tertiary); }
+td { padding: 9px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); vertical-align: middle; color: var(--color-text-primary); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--color-background-secondary); }
+.rank { font-weight: 500; font-size: 13px; color: var(--color-text-secondary); width: 28px; }
+.topic { font-weight: 500; font-size: 13px; }
+.stars { letter-spacing: 1px; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+.b-must { background: #E6F1FB; color: #0C447C; }
+.b-high { background: #EAF3DE; color: #27500A; }
+.b-med { background: #FAEEDA; color: #633806; }
+.b-low { background: #F1EFE8; color: #444441; }
+.b-must.dark, .b-high.dark, .b-med.dark, .b-low.dark {}
+@media (prefers-color-scheme: dark) {
+  .b-must { background: #0C447C; color: #B5D4F4; }
+  .b-high { background: #27500A; color: #C0DD97; }
+  .b-med { background: #633806; color: #FAC775; }
+  .b-low { background: #444441; color: #D3D1C7; }
+}
+.diff { font-size: 13px; }
+.diff.easy { color: #3B6D11; }
+.diff.med { color: #BA7517; }
+.diff.hard { color: #A32D2D; }
+.diff.vhard { color: #993556; }
+.hidden { display: none; }
+.section-label { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); text-transform: uppercase; letter-spacing: 0.08em; padding: 10px 10px 4px; background: var(--color-background-secondary); }
+.note { font-size: 12px; color: var(--color-text-secondary); margin-top: 1rem; padding: 10px 14px; border-left: 2px solid var(--color-border-secondary); border-radius: 0; }
+</style>
+<div class="container">
+  <div class="filters">
+    <button class="filter-btn active" onclick="filter('all', this)">All topics</button>
+    <button class="filter-btn" onclick="filter('must', this)">🔵 Must know</button>
+    <button class="filter-btn" onclick="filter('high', this)">🟢 High value</button>
+    <button class="filter-btn" onclick="filter('med', this)">🟡 Medium</button>
+    <button class="filter-btn" onclick="filter('low', this)">⚫ Lower priority</button>
+  </div>
+  <div class="legend">
+    <span class="legend-item"><span class="dot" style="background:#185FA5"></span>Must know (interviews)</span>
+    <span class="legend-item"><span class="dot" style="background:#3B6D11"></span>High value</span>
+    <span class="legend-item"><span class="dot" style="background:#BA7517"></span>Medium</span>
+    <span class="legend-item"><span class="dot" style="background:#888780"></span>Lower priority</span>
+  </div>
+  <div class="table-wrap">
+    <table id="main-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Topic</th>
+          <th>Interview importance</th>
+          <th>On-the-job value</th>
+          <th>Difficulty</th>
+          <th>Priority</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <p class="note">⭐ Interview importance = frequency in company OAs, coding rounds, and vivas. Job value = how often you actually use it as a software engineer.</p>
+</div>
+
+<script>
+const topics = [
+  { rank:1, name:"Arrays (Part I & II)", interview:"★★★★★", job:"★★★★★", diff:"Easy", diffClass:"easy", priority:"must", group:"Foundations" },
+  { rank:2, name:"Dynamic Programming (all 6 parts)", interview:"★★★★★", job:"★★★★☆", diff:"Very Hard", diffClass:"vhard", priority:"must", group:"Core Algorithms" },
+  { rank:3, name:"Linked List (Part 1 & 2)", interview:"★★★★★", job:"★★★★☆", diff:"Medium", diffClass:"med", priority:"must", group:"Data Structures" },
+  { rank:4, name:"Binary Trees (all 3 parts)", interview:"★★★★★", job:"★★★★☆", diff:"Medium", diffClass:"med", priority:"must", group:"Trees & Graphs" },
+  { rank:5, name:"Graphs (all 5 parts)", interview:"★★★★★", job:"★★★★★", diff:"Hard", diffClass:"hard", priority:"must", group:"Trees & Graphs" },
+  { rank:6, name:"BST (Part 1 & 2)", interview:"★★★★☆", job:"★★★★☆", diff:"Medium", diffClass:"med", priority:"must", group:"Trees & Graphs" },
+  { rank:7, name:"Recursion (Part 1 & 2)", interview:"★★★★★", job:"★★★★☆", diff:"Medium", diffClass:"med", priority:"must", group:"Core Algorithms" },
+  { rank:8, name:"Backtracking", interview:"★★★★★", job:"★★★☆☆", diff:"Hard", diffClass:"hard", priority:"must", group:"Core Algorithms" },
+  { rank:9, name:"Stacks (Part 1 & 2)", interview:"★★★★★", job:"★★★★☆", diff:"Easy–Med", diffClass:"easy", priority:"must", group:"Data Structures" },
+  { rank:10, name:"Hashing (Part 1 & 2)", interview:"★★★★★", job:"★★★★★", diff:"Easy", diffClass:"easy", priority:"must", group:"Data Structures" },
+  { rank:11, name:"Heaps (Part 1 & 2)", interview:"★★★★☆", job:"★★★★☆", diff:"Medium", diffClass:"med", priority:"must", group:"Data Structures" },
+  { rank:12, name:"Time & Space Complexity (both)", interview:"★★★★★", job:"★★★★★", diff:"Medium", diffClass:"med", priority:"must", group:"Foundations" },
+  { rank:13, name:"Divide & Conquer", interview:"★★★★☆", job:"★★★★☆", diff:"Medium", diffClass:"med", priority:"must", group:"Core Algorithms" },
+  { rank:14, name:"Queue", interview:"★★★★☆", job:"★★★★☆", diff:"Easy", diffClass:"easy", priority:"high", group:"Data Structures" },
+  { rank:15, name:"Greedy Algorithms", interview:"★★★★☆", job:"★★★☆☆", diff:"Medium", diffClass:"med", priority:"high", group:"Core Algorithms" },
+  { rank:16, name:"2D Arrays", interview:"★★★★☆", job:"★★★★☆", diff:"Medium", diffClass:"med", priority:"high", group:"Foundations" },
+  { rank:17, name:"Tries", interview:"★★★★☆", job:"★★★★☆", diff:"Hard", diffClass:"hard", priority:"high", group:"Data Structures" },
+  { rank:18, name:"Char Arrays & Strings", interview:"★★★★★", job:"★★★★☆", diff:"Easy–Med", diffClass:"easy", priority:"high", group:"Foundations" },
+  { rank:19, name:"Vectors", interview:"★★★★☆", job:"★★★★★", diff:"Easy", diffClass:"easy", priority:"high", group:"Foundations" },
+  { rank:20, name:"Functions", interview:"★★★☆☆", job:"★★★★★", diff:"Easy", diffClass:"easy", priority:"high", group:"Foundations" },
+  { rank:21, name:"OOPs (Part 1 & 2)", interview:"★★★★☆", job:"★★★★★", diff:"Medium", diffClass:"med", priority:"high", group:"Foundations" },
+  { rank:22, name:"Segment Trees", interview:"★★★☆☆", job:"★★★☆☆", diff:"Very Hard", diffClass:"vhard", priority:"med", group:"Advanced" },
+  { rank:23, name:"Basic Sorting Algorithms", interview:"★★★★☆", job:"★★★☆☆", diff:"Easy", diffClass:"easy", priority:"high", group:"Core Algorithms" },
+  { rank:24, name:"Bit Manipulation", interview:"★★★☆☆", job:"★★★☆☆", diff:"Medium", diffClass:"med", priority:"med", group:"Advanced" },
+  { rank:25, name:"Binary Number System", interview:"★★★☆☆", job:"★★★☆☆", diff:"Easy", diffClass:"easy", priority:"med", group:"Foundations" },
+  { rank:26, name:"Conditional Statements", interview:"★★☆☆☆", job:"★★★★★", diff:"Easy", diffClass:"easy", priority:"low", group:"Foundations" },
+  { rank:27, name:"Loops", interview:"★★☆☆☆", job:"★★★★★", diff:"Easy", diffClass:"easy", priority:"low", group:"Foundations" },
+  { rank:28, name:"Patterns", interview:"★★☆☆☆", job:"★★☆☆☆", diff:"Easy", diffClass:"easy", priority:"low", group:"Foundations" },
+  { rank:29, name:"Introduction to Pointers", interview:"★★★☆☆", job:"★★★☆☆", diff:"Medium", diffClass:"med", priority:"med", group:"Foundations" },
+];
+
+const priorityLabel = { must:"Must know", high:"High value", med:"Medium", low:"Lower priority" };
+const priorityClass = { must:"b-must", high:"b-high", med:"b-med", low:"b-low" };
+
+let current = 'all';
+function filter(type, btn) {
+  current = type;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
+}
+
+function render() {
+  const tbody = document.getElementById('tbody');
+  tbody.innerHTML = '';
+  const filtered = current === 'all' ? topics : topics.filter(t => t.priority === current);
+  const groups = {};
+  filtered.forEach(t => {
+    if (!groups[t.group]) groups[t.group] = [];
+    groups[t.group].push(t);
+  });
+  let rank = 1;
+  Object.entries(groups).forEach(([grp, items]) => {
+    const sl = document.createElement('tr');
+    sl.innerHTML = `<td colspan="6" class="section-label">${grp}</td>`;
+    tbody.appendChild(sl);
+    items.forEach(t => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="rank">${rank++}</td>
+        <td class="topic">${t.name}</td>
+        <td class="stars">${t.interview}</td>
+        <td class="stars">${t.job}</td>
+        <td class="diff ${t.diffClass}">${t.diff}</td>
+        <td><span class="badge ${priorityClass[t.priority]}">${priorityLabel[t.priority]}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  });
+}
+render();
+</script>
