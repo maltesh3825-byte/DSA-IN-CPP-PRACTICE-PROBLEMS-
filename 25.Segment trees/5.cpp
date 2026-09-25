@@ -30,10 +30,34 @@ public:
         }
         cout<<endl;
     }
+    int maxQuery(int qi, int qj, int si, int sj, int node){
+        if(qi>sj || qj<si){
+            return INT_MIN;
+         }
+         if(qi<=si && qj>=sj){
+            //complete
+            return tree[node];
+
+         }
+         else{
+            //partial
+            int mid = si + (sj-si)/2;
+            int leftmax= maxQuery(qi, qj, si, mid, 2*node+1);
+            int rightmax= maxQuery(qi, qj, mid+1, sj, 2*node+2);
+
+            return max(leftmax, rightmax);
+         }
+
+    }
+    int rangeQuery(int qi, int qj){
+        return maxQuery(qi, qj, 0, n-1,0);
+    }
 };
 int main(){
     vector<int> nums={6, 8, -1, 2, 17, 1, 3, 2, 4};
     segmentTree st(nums);
-    st.printTree();
+    // st.printTree();
+    cout<<st.rangeQuery(2,5)<<endl;
+    cout<<st.rangeQuery(5,8);
 
 }
